@@ -186,7 +186,6 @@ class Helper
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_HEADER, 1);
-        curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         $result = curl_exec($ch);
         if (curl_errno($ch)) {
@@ -207,7 +206,7 @@ class Helper
         if (!function_exists($function_name)) {
             return false;
         }
-        $ini = \OC::$server->getIniWrapper();
+        $ini = \OC::$server->get(\OC\IniGetWrapper::class);
         $disabled = explode(',', $ini->get('disable_functions') ?: '');
         $disabled = array_map('trim', $disabled);
         if (in_array($function_name, $disabled)) {
@@ -223,12 +222,12 @@ class Helper
 
     public static function findBinaryPath($program, $default = null)
     {
-        $memcache = \OC::$server->getMemCacheFactory()->createDistributed('findBinaryPath');
+        $memcache = \OC::$server->get(\OCP\ICacheFactory::class)->createDistributed('findBinaryPath');
         if ($memcache->hasKey($program)) {
             return $memcache->get($program);
         }
 
-        $dataPath = \OC::$server->getSystemConfig()->getValue('datadirectory');
+        $dataPath = \OC::$server->get(\OCP\IConfig::class)->getSystemValue('datadirectory');
         $paths = ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/opt/bin', $dataPath . "/bin"];
         $result = $default;
         $exeSniffer = new ExecutableFinder();
@@ -323,7 +322,10 @@ class Helper
     }
     public static function sanitize($string)
     {
-        return filter_var($string, FILTER_SANITIZE_STRING);
+        if (!is_string($string)) {
+            return $string;
+        }
+        return htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     public static function doSignal($pid, $signal): bool
@@ -374,7 +376,7 @@ class Helper
     public static function getSearchSites(): array
     {
         $key = 'searchSites';
-        $memcache = \OC::$server->getMemCacheFactory()->createDistributed($key);
+        $memcache = \OC::$server->get(\OCP\ICacheFactory::class)->createDistributed($key);
         if ($memcache->hasKey($key)) {
             $sites = $memcache->get($key);
         } else {
@@ -395,15 +397,21 @@ class Helper
 
     public static function getDataDir(): string
     {
-        return \OC::$server->getSystemConfig()->getValue('datadirectory');
+        return \OC::$server->get(\OCP\IConfig::class)->getSystemValue('datadirectory');
     }
 
     public static function getLocalFolder(string $path): string
     {
         if (self::getUID()) {
             OC_Util::setupFS();
-            //get the real path of the file in the filesystem
-            return \OC\Files\Filesystem::getLocalFile($path);
+            // Resolve through the active filesystem view (NC33-compatible).
+            $view = Filesystem::getView();
+            if ($view) {
+                $localPath = $view->getLocalFile($path);
+                if (is_string($localPath)) {
+                    return $localPath;
+                }
+            }
         }
         return "";
     }
@@ -491,7 +499,7 @@ class Helper
 
     public static function getAppPath(): string
     {
-        return \OC::$server->getAppManager()->getAppPath('ncdownloader');
+        return \OC::$server->get(\OCP\App\IAppManager::class)->getAppPath('ncdownloader');
     }
     public static function folderUpdated(string $dir): bool
     {
@@ -529,15 +537,15 @@ class Helper
     }
     public static function query($key)
     {
-        return self::isLegacyVersion() ? \OC::$server->query($key) : \OC::$server->get($key);
+        return \OC::$server->get($key);
     }
     public static function getLogger()
     {
-        return (version_compare(implode(".", self::getVersion()), '24.0.0') < 0) ? \OC::$server->getLogger() : \OC::$server->get(LoggerInterface::class);
+        return \OC::$server->get(LoggerInterface::class);
     }
     public static function getDatabaseConnection()
     {
-        return self::isLegacyVersion() ? \OC::$server->getDatabaseConnection() : \OC::$server->get(\OCP\IDBConnection::class);
+        return \OC::$server->get(\OCP\IDBConnection::class);
     }
     public static function getAdminSettings($key): string
     {
