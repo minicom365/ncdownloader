@@ -605,6 +605,13 @@ class Helper
                 "value" => $data['ncd_aria2_binary'] ?? "",
                 "placeholder" => $data['ncd_aria2_binary'] ?? "/usr/bin/aria2c",
                 "path" => $data['path'],
+            ],
+            [
+                "label" => "BitSearch URL",
+                "id" => "ncd_bitsearch_url",
+                "value" => $data['ncd_bitsearch_url'] ?? "",
+                "placeholder" => $data['ncd_bitsearch_url'] ?? "https://bitsearch.to/search",
+                "path" => $data['path'],
             ]
         ];
         return $options;

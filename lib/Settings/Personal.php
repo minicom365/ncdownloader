@@ -6,6 +6,7 @@ use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IConfig;
 use OCP\IDBConnection;
+use OCP\IGroupManager;
 use OCP\Settings\ISettings;
 use OCA\NCDownloader\Db\Settings;
 use OCA\NCDownloader\Tools\Helper;
@@ -21,16 +22,19 @@ class Personal implements ISettings
 	private $config;
 	private $uid;
 	private $settings;
+	private $groupManager;
 
 	public function __construct(
 		IDBConnection $connection,
 		ITimeFactory $timeFactory,
-		IConfig $config
+		IConfig $config,
+		IGroupManager $groupManager
 	) {
 		$this->connection = $connection;
 		$this->timeFactory = $timeFactory;
 		$this->config = $config;
-		$this->uid = \OC::$server->getUserSession()->getUser()->getUID();
+		$this->groupManager = $groupManager;
+		$this->uid = \OC::$server->get(\OCP\IUserSession::class)->getUser()->getUID();
 		$this->settings = new Settings($this->uid);
 	}
 
@@ -49,7 +53,7 @@ class Personal implements ISettings
 				'ncd_seed_time' => $this->settings->get("ncd_seed_time"),
 				"path" => $path,
 				"disallow_aria2_settings" => Helper::getAdminSettings("disallow_aria2_settings"),
-				"is_admin" => \OC_User::isAdminUser($this->uid),
+				"is_admin" => $this->groupManager->isAdmin($this->uid),
 			],
 			"options" => [
 				[

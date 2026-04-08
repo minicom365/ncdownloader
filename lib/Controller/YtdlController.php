@@ -9,6 +9,7 @@ use OCA\NCDownloader\Tools\Helper;
 use OCA\NCDownloader\Ytdl\Ytdl;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\IL10N;
 use OCP\IRequest;
 
@@ -32,7 +33,7 @@ class YtdlController extends Controller
         parent::__construct($appName, $request);
         $this->appName = $appName;
         $this->uid = $UserId;
-        $this->urlGenerator = \OC::$server->getURLGenerator();
+        $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);
         $this->l10n = $IL10N;
         $this->downloadDir = Helper::getDownloadDir();
         $this->dbconn = new DbHelper();
@@ -41,10 +42,7 @@ class YtdlController extends Controller
         $this->aria2->init();
         $this->tablename = $this->dbconn->queryBuilder->getTableName("ncdownloader_info");
     }
-    /**
-     * @NoAdminRequired
-     *
-     */
+    #[NoAdminRequired]
     public function Index()
     {
         $data = $this->dbconn->getYtdlByUid($this->uid);
@@ -78,9 +76,7 @@ class YtdlController extends Controller
         folderScan::sync();
         return new JSONResponse($resp);
     }
-    /**
-     * @NoAdminRequired
-     */
+    #[NoAdminRequired]
     public function Download(string $url, ?string $extension = "mp4")
     {
         $dlDir = $this->ytdl->getDownloadDir();
@@ -116,9 +112,7 @@ class YtdlController extends Controller
             return ['error' => $this->l10n->t("failed to get any url!")];
         }
     }
-    /**
-     * @NoAdminRequired
-     */
+    #[NoAdminRequired]
     public function Delete(string $gid)
     {
         //$gid = $this->request->getParam('gid');
@@ -151,9 +145,7 @@ class YtdlController extends Controller
         }
         return new JSONResponse(['message' => $msg]);
     }
-    /**
-     * @NoAdminRequired
-     */
+    #[NoAdminRequired]
     public function Redownload(string $gid)
     {
         //$gid = $this->request->getParam('gid');

@@ -8,10 +8,10 @@ use OCA\NCDownloader\Tools\folderScan;
 use OCA\NCDownloader\Tools\Helper;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\Files\IRootFolder;
 use OCP\IL10N;
 use OCP\IRequest;
-use OC_Util;
 use \OC\Files\Filesystem;
 
 class Aria2Controller extends Controller
@@ -34,9 +34,9 @@ class Aria2Controller extends Controller
         $this->uid = $UserId;
         $this->l10n = $IL10N;
         $this->rootFolder = $rootFolder;
-        $this->urlGenerator = \OC::$server->getURLGenerator();
+        $this->urlGenerator = \OC::$server->get(\OCP\IURLGenerator::class);
         $this->downloadDir = Helper::getDownloadDir();
-        OC_Util::setupFS();
+        \OC_Util::setupFS();
         //$this->config = \OC::$server->getAppConfig();
         $this->aria2 = $aria2;
         $this->aria2->init();
@@ -44,9 +44,8 @@ class Aria2Controller extends Controller
         $this->counters = new Counters($aria2, $this->dbconn, $UserId);
        
     }
-    /**
-     * @NoAdminRequired
-     */
+    
+    #[NoAdminRequired]
     public function Action($path)
     {
         $path = strtolower(trim($path));
@@ -131,9 +130,8 @@ class Aria2Controller extends Controller
             'path' => $this->urlGenerator->linkToRoute('ncdownloader.Aria2.Action', ['path' => $path]),
         );
     }
-    /**
-     * @NoAdminRequired
-     */
+    
+    #[NoAdminRequired]
     public function getStatus($path)
     {
         //$path = $this->request->getRequestUri();

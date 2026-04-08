@@ -34,7 +34,7 @@ class Ytdl
         if (!empty($binary)) {
             $this->bin = $binary;
         } else {
-            $this->bin = __DIR__ . "/../../bin/yt-dlp"; //Helper::findBinaryPath('ytdl', __DIR__ . "/../../bin/yt-dlp");
+            $this->bin = Helper::findBinaryPath('yt-dlp', __DIR__ . "/../../bin/yt-dlp");
         }
         if ($this->isInstalled() && !$this->isExecutable()) {
             chmod($this->bin, 0744);
