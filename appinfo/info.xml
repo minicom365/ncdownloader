@@ -19,7 +19,7 @@ Download videos from 700+ video sites (youtube,youku,vimo,dailymotion,twitter,fa
     <screenshot>https://user-images.githubusercontent.com/3911975/142445020-27ec389a-5437-4d28-acc0-5e757fd6897d.png</screenshot>
     <repository>https://github.com/shiningw/ncdownloader</repository>
     <dependencies>
-        <php min-version="8.1" max-version="8.4" />
+        <php min-version="8.1" max-version="8.5" />
         <nextcloud min-version="28" max-version="32"/>
     </dependencies>
     <navigations>
