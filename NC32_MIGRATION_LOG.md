@@ -232,3 +232,69 @@ Provide dedicated action tracing for ncdownloader requests (start/success/error)
 - `php -l` passed for all modified PHP files.
 - ncdownloader page opens without HTTP 500.
 - aria2 binary detection works with `/usr/bin/aria2c` and runtime fallback.
+
+---
+
+## Phase 5: Action Logging Robustness & Persistent Docker Deployment (28 May 2026)
+
+**Environment:** Nextcloud 33.0.x / 32.0.x, PHP 8.4.x, Linux  
+**Goal:** Address operational trace disk space inflation, increase PHP runtime flexibility, ensure frontend build delivery, and resolve container recreation/CPU architecture-induced segmentation faults (`Signal 11` crashes).
+
+### 1. Action Log Middleware Robustness (Log Rotation)
+
+#### Problem
+The operational trace log at `<datadirectory>/ncdownloader/actions.log` could grow indefinitely in high-traffic installations, causing disk resource exhaustion.
+
+#### Fix
+Implemented a deterministic log rotation algorithm (`rotateLog`) in `ActionLogMiddleware`:
+- Limits log file sizes to a strict threshold (**10MB**).
+- Triggers dynamic shifting of older logs up to 3 generations (`actions.log.1`, `.2`, `.3`) and truncates the active file cleanly.
+- Added architectural documentation comments mapping standard design criteria.
+
+#### File Changed
+- `lib/Middleware/ActionLogMiddleware.php`
+
+---
+
+### 2. Nextcloud 32/33 PHP Compatibility Range Elevation
+
+#### Goal
+Prevent manual installation bootstrap failures on newer container builds running experimental or updated runtime environments.
+
+#### Fix
+Elevated the maximum allowed PHP version parameter to `8.5` inside the manifest configuration metadata.
+
+#### File Changed
+- `appinfo/info.xml`
+
+---
+
+### 3. Frontend compilation tracking (.gitignore adjustment)
+
+#### Problem
+Standard git clones missed precompiled frontend scripts because `.gitignore` excluded all compiled assets under `js/`, leading to blank web pages.
+
+#### Fix
+Modified `.gitignore` to allow tracking of precompiled production bundles and committed Webpack assets directly to the target release branch for instant, zero-build deployment.
+
+#### Files Changed
+- `.gitignore`
+- `js/app.js` and other compiled frontend assets
+
+---
+
+### 4. Docker Persistent Architecture & CPU Architecture Segfault (Signal 11) Fix
+
+#### Problem
+Precompiled `x86_64` binaries placed in the persistent volume crashed with `Signal 11` (Segmentation Fault / SIGSEGV) when run on differing host CPU architectures (e.g., ARM64 NAS setups). Conversely, native `apt` packages installed inside the container were lost upon container recreation or image upgrades.
+
+#### Fix
+Engineered a bulletproof persistent deployment strategy documented in both English and Simplified Chinese README files:
+- Installed native `aria2` temporarily inside the container using the OS package manager (`apt-get install -y aria2`) to auto-obtain a perfectly compiled, native binary for the target CPU architecture.
+- Copied the natively verified `/usr/bin/aria2c` binary from the container system directly into the persistent storage volume path (`custom_apps/ncdownloader/bin/aria2c`).
+- Combined with a container-native Composer dependency injection (`composer.phar` copied, executed natively inside, and then deleted), the app now boasts a fully self-contained, 100% compatible native environment that survives docker-compose upgrades, down/up actions, and image refreshes.
+
+#### Files Changed
+- `README.md`
+- `README.zh-CN.md`
+
